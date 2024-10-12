@@ -22,6 +22,19 @@ const Navbar = () => (
             News
           </Link>
         </li>
+
+        <li>
+          <Link
+            to="/"
+            onClick={() => {
+              localStorage.removeItem("token");
+              location.reload();
+            }}
+            className="text-white hover:text-gray-400"
+          >
+            Logout
+          </Link>
+        </li>
       </ul>
     </div>
   </nav>

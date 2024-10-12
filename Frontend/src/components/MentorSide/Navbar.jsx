@@ -4,6 +4,11 @@ import { Link } from "react-router-dom";
 const Navbar = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
+  const logout = () => {
+    localStorage.removeItem("token");
+    location.reload();
+  };
+
   return (
     <nav className="bg-gray-800 p-5 flex justify-between items-center">
       <div className="flex items-center space-x-3">
@@ -49,7 +54,8 @@ const Navbar = () => {
               Edit Profile
             </a>
             <a
-              href=""
+              href="/"
+              onClick={logout}
               className="block px-4 py-2 text-gray-800 hover:bg-gray-300"
             >
               Logout

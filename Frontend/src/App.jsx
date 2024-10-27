@@ -16,6 +16,12 @@ import HodDashboard from "./components/HodSide/HodDashboard";
 import MentorDashboard from "./components/MentorSide/MentorDashboard";
 import StudentsListHod from "./components/HodSide/StudentListHod";
 import HODAnnouncementPage from "./components/HodSide/HODAnnouncementpage";
+import ChatPage from "./components/MentorSide/ChatPage";
+import StudentList from "./components/MentorSide/StudentList";
+import Notifications from "./components/MentorSide/Notifications";
+import Internship from "./components/MentorSide/Internships";
+import Download from "./components/MentorSide/Download";
+import StudentDetail from "./components/MentorSide/StudentDetail";
 
 function App() {
   return (
@@ -33,10 +39,10 @@ function App() {
               ) : authService.getUser() == 3 ? (
                 <HodDashboard />
               ) : (
-                <Login/>// Default fallback if no matching role is found
+                <Login /> // Default fallback if no matching role is found
               )
             ) : (
-              <Login/>
+              <Login />
             )
           }
         />
@@ -90,6 +96,13 @@ function App() {
             authService.getCurrentUser() ? <HODAnnouncementPage /> : <Login />
           }
         />
+
+        <Route path="/chat" element={<ChatPage />} />
+        <Route path="/student" element={<StudentList />} />
+        <Route path="/students/:collegeId" element={<StudentDetail />} />
+        <Route path="/notification" element={<Notifications />} />
+        <Route path="/intern" element={<Internship />} />
+        <Route path="/download" element={<Download />} />
       </Routes>
     </Router>
   );

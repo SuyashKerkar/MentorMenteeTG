@@ -24,14 +24,17 @@ const Navbars = () => {
     dropdownSetter((prev) => !prev);
   };
 
+  const logout = () => {
+    localStorage.removeItem("token");
+    location.reload();
+  };
+
   return (
     <nav className="bg-gray-800 shadow-md z-50 relative">
       <div className="container mx-auto p-4 flex items-center justify-between">
-        
         {/* Logo and Header */}
         <div className="flex items-center">
           <img src="/src/assets/logo.png" alt="logo" className="h-12 w-12" />
-        
         </div>
 
         {/* Hamburger Menu for Mobile */}
@@ -161,7 +164,8 @@ const Navbars = () => {
                   Edit Profile
                 </Link>
                 <Link
-                  to="#"
+                  to="/"
+                  onClick={logout}
                   className="block px-4 py-2 text-sm text-gray-800 hover:opacity-70"
                 >
                   Logout

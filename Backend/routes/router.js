@@ -40,6 +40,8 @@ router.post('/getParentsDetails',upload.none(), personaldetailsController.getPar
 router.get('/allStudents',studentController.allStudents);
 router.post('/getStudentpyDetails',upload.none(), prevYearController.getPyDetails);
 router.post('/getStudentcyDetails',upload.none(), currentYearController.getcyDetails);
+router.post('/getInternships',upload.none(), internshipController.getInternships);
+router.post('/deleteInt',upload.none(), internshipController.delInternship);
 
 // mentor routes
 router.get('/allMentors',mentorController.allMentors);

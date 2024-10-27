@@ -1,13 +1,16 @@
 import { useState, useEffect } from "react";
 import { FaEdit, FaTrash } from "react-icons/fa";
-import {useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Navbars from "../Navbars";
-import axios from 'axios';
+import axios from "axios";
 
 const Internships = () => {
   const navigate = useNavigate();
   // Form data state
   const [formData, setFormData] = useState({
+    int_id: null,
+    idx: -1,
+    updated: false,
     companyName: "",
     jobProfile: "",
     startDate: "",
@@ -27,12 +30,46 @@ const Internships = () => {
   const [editingIndex, setEditingIndex] = useState(null);
 
   useEffect(() => {
-    const Internships = JSON.parse(localStorage.getItem("Internships"));
-    if (Internships) {
-      setInternships(Internships);
+    async function fetchData() {
+      const formDataObj = new FormData();
+      formDataObj.append(
+        "email",
+        JSON.parse(localStorage.getItem("loggedInUser")).email
+      );
+  
+      try {
+        let response = await axios.post("http://localhost:3001/getInternships", formDataObj, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+        let ints= [];
+        response.data.forEach((e,index)=>{
+          const newFormData = {
+            int_id: e.int_id,
+            idx: index,
+            companyName: e.company_name,
+            updated: false,
+            jobProfile: e.job_profile,
+            startDate: e.start_date.split("T")[0],
+            endDate: e.end_date.split("T")[0],
+            stipendStatus: e.stipent_status,
+            stipend: e.stipent,
+            certificate: e.internship_cerificate,
+          };
+          ints.push(newFormData)
+        })
+        setInternships(ints);
+        console.log(response.data);
+        // Update the state or handle response data as needed
+      } catch (error) {
+        console.error(error);
+      }
     }
-  }, []);
-
+  
+    fetchData();
+  }, []); // Pass dependencies or leave empty for a single execution
+  
   // Handle form input change
   const handleChange = (e) => {
     const { name, value, files } = e.target;
@@ -76,28 +113,40 @@ const Internships = () => {
       setErrors(validationErrors);
       return;
     }
-  
+
     // Ensure that certificate is set to "N/A" if not uploaded
     const updatedFormData = {
       ...formData,
       certificate: formData.certificate ? formData.certificate : "N/A",
     };
-  
+
     if (editingIndex === null) {
       // Add new internship
-      setInternships([...internships, updatedFormData]);
+      const addedFormData = {
+        ...updatedFormData,
+        idx: internships.length,
+      };
+      setInternships([...internships, addedFormData]);
       alert("Internship added successfully!"); // Alert for adding
     } else {
       // Update existing internship
+      const editedFormData = {
+        ...updatedFormData,
+        idx: editingIndex,
+        updated: true,
+      };
       const updatedInternships = [...internships];
-      updatedInternships[editingIndex] = updatedFormData;
+      updatedInternships[editingIndex] = editedFormData;
       setInternships(updatedInternships);
       alert("Internship updated successfully!"); // Alert for updating
     }
-  
+
     // Reset the form and clear the editing index
     setFormData({
+      int_id: null,
+      idx: -1,
       companyName: "",
+      updated: false,
       jobProfile: "",
       startDate: "",
       endDate: "",
@@ -108,12 +157,22 @@ const Internships = () => {
     setEditingIndex(null);
     setErrors({});
   };
-  
 
   // Handle deleting an internship
-  const handleDelete = (index) => {
+  const handleDelete = async(index) => {
     const updatedInternships = internships.filter((_, i) => i !== index);
     setInternships(updatedInternships);
+
+    try {
+      await axios.post("http://localhost:3001/deleteInt", {int_id: internships[index].int_id}, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+    } catch (error) {
+      console.error("Error uploading files:", error);
+      alert("Failed to upload files.");
+    }
   };
 
   // Handle editing an internship, pre-filling the form
@@ -128,7 +187,10 @@ const Internships = () => {
     e.preventDefault();
     // Create a FormData object
     const formDataObj = new FormData();
-    formDataObj.append("email", JSON.parse(localStorage.getItem("loggedInUser")).email);
+    formDataObj.append(
+      "email",
+      JSON.parse(localStorage.getItem("loggedInUser")).email
+    );
 
     // Create a modified internships array where the certificate is replaced with certificate.name
     const internshipsWithCertificateNames = internships.map((internship) => ({
@@ -162,14 +224,13 @@ const Internships = () => {
     }
 
     // Save the internships with certificate names to localStorage
-      localStorage.setItem(
-        "Internships",
-        JSON.stringify(internshipsWithCertificateNames)
-      );
+    localStorage.setItem(
+      "Internships",
+      JSON.stringify(internshipsWithCertificateNames)
+    );
 
     alert("Internships saved successfully!");
     navigate("/cocurriact");
-   
   };
 
   return (
@@ -409,7 +470,11 @@ const Internships = () => {
                       </td>
                       <td className="border px-4 py-2">{internship.stipend}</td>
                       <td className="border px-4 py-2">
-                        {internship.certificate ? (internship.certificate.name ? internship.certificate.name : internship.certificate) : "N/A"}
+                        {internship.certificate
+                          ? internship.certificate.name
+                            ? internship.certificate.name
+                            : internship.certificate
+                          : "N/A"}
                       </td>
                       <td className="border px-4 py-2">
                         <button

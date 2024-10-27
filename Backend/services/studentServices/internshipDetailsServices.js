@@ -27,46 +27,23 @@ exports.intdetails = (body, files) => {
 
                 // If records exist, delete them before inserting new ones
                 if (result.length > 0) {
-                    // Use Promise.all to handle multiple file deletions
-                    const deleteFilePromises = result.map(r => {
-                        return new Promise((resolveFile, rejectFile) => {
-                            if (r.internship_certificate_path) {
-                                fs.access(r.internship_certificate_path, fs.constants.F_OK, (err) => {
-                                    if (!err) {
-                                        // File exists, remove it
-                                        fs.unlink(r.internship_certificate_path, (err) => {
-                                            if (err) {
-                                                console.error('Error removing old file:', err);
-                                                return rejectFile(err); // Reject the promise for file deletion
-                                            } else {
-                                                resolveFile(); // Resolve the file deletion promise
-                                            }
-                                        });
-                                    } else {
-                                        resolveFile(); // File does not exist, resolve immediately
-                                    }
-                                });
-                            } else {
-                                resolveFile(); // No path, resolve immediately
-                            }
-                        });
-                    });
-
-                    // Wait for all file deletions to complete
-                    Promise.all(deleteFilePromises)
-                        .then(() => {
-                            const deleteInternshipQuery = `DELETE FROM mentor.students_internships WHERE s_id = ?`;
-                            connection.query(deleteInternshipQuery, [s_id], (err) => {
-                                if (err) {
-                                    console.error("Error deleting student internship details:", err);
-                                    return reject(err);
-                                }
-
-                                // Proceed with insertion after successful deletion
-                                insertInternshipRecords(s_id, internships, resolve, reject, files);
-                            });
+                    if (result.length == internships.length) {
+                        internships.forEach((internship) => {
+                            updateIntenshipRecord(internship, files)
                         })
-                        .catch(reject); // Reject if any file deletion fails
+                        resolve({ message: "Student internship details updated successfully" });
+                    } else if (result.length < internships.length) {
+                        internships.forEach((internship) => {
+                            if (internship.idx < result.length) {
+                                updateIntenshipRecord(internship, files)
+                            } else {
+                                insertIntenshipRecord(s_id, internship, files)
+                            }
+                        })
+                        resolve({ message: "Student internship details updated successfully" });
+                    } else if (result.length > internships.length) {
+                        // No such case handled by deleteInternshipRecord
+                    }
                 } else {
                     // No existing records, proceed directly to insertion
                     insertInternshipRecords(s_id, internships, resolve, reject, files);
@@ -75,11 +52,118 @@ exports.intdetails = (body, files) => {
         });
     });
 };
+exports.getInternshipRecord = (email) => {
+    return new Promise(async (resolve, reject) => {
+        const getS_id = "SELECT s_id FROM mentor.login WHERE email = ?";
+        await connection.query(getS_id, [email], async (err, user) => {
+            if (err) {
+                reject(err);
+            }
+            let s_id = user[0].s_id;
+            const query = "SELECT * FROM mentor.students_internships WHERE s_id = ?";
+            await connection.query(query, [s_id], (err, int) => {
+                if (err) {
+                    reject(err);
+                }
+                resolve(int);
+            })
+        })
+    })
+}
+exports.deleteInternshipRecord = (int_id) => {
+    return new Promise((resolve, reject) => {
+        const query = "SELECT * FROM mentor.students_internships WHERE int_id = ?";
+        connection.query(query, [int_id], (err, result) => {
+            if (err) {
+                reject(err);
+            }
+            deleteFileIfExists(result[0].internship_certificate_path).then(() => {
+                const deleteQuery = "DELETE FROM mentor.students_internships WHERE int_id = ?";
+                connection.query(deleteQuery, [int_id], (err, result) => {
+                    if (err) {
+                        reject(err);
+                    }
+                    console.log(result);
+                });
+            }).catch((err) => {
+                console.error("Error during file deletion or record deletion:", err);
+            });
+            resolve(result);
+        });
+    })
+}
+
+const deleteFileIfExists = (filePath) => {
+    return new Promise((resolve, reject) => {
+        if (filePath) {
+            fs.access(filePath, fs.constants.F_OK, (err) => {
+                if (!err) {
+                    // File exists, remove it
+                    fs.unlink(filePath, (err) => {
+                        if (err) {
+                            console.error('Error removing file:', err);
+                            return reject(err); // Reject the promise for file deletion
+                        } else {
+                            resolve(); // Resolve the file deletion promise
+                        }
+                    });
+                } else {
+                    resolve(); // File does not exist, resolve immediately
+                }
+            });
+        } else {
+            resolve(); // No path, resolve immediately
+        }
+    });
+};
+
+
+const insertIntenshipRecord = (s_id, internship, files) => {
+    const { companyName, jobProfile, startDate, endDate, stipendStatus, stipend, certificate } = internship;
+
+    const insertQuery = `INSERT INTO mentor.students_internships (s_id, company_name, job_profile, start_date, end_date, stipent_status, stipent, internship_cerificate, internship_certificate_path) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);`;
+
+    let certificatePath = null;
+    files.forEach(file => {
+        if (file.originalname === certificate) {
+            certificatePath = file.path;
+        }
+    });
+
+    connection.query(insertQuery, [s_id, companyName, jobProfile, startDate, endDate, stipendStatus, stipend, certificate, certificatePath], (err, result) => {
+        if (err) {
+            console.error(err)
+        }
+    })
+}
+
+const updateIntenshipRecord = (internship, files) => {
+    const { int_id, companyName, updated, jobProfile, startDate, endDate, stipendStatus, stipend, certificate } = internship;
+    if (updated) {
+        const query = `UPDATE students_internships SET company_name = ?, job_profile = ?, start_date = ?, end_date = ?, stipent_status = ?, stipent = ?, internship_cerificate = COALESCE(?,internship_cerificate), internship_certificate_path = COALESCE(?, internship_certificate_path) WHERE int_id = ?`;
+
+
+        let certificatePath = null;
+        files.forEach(file => {
+            if (file.originalname === certificate) {
+                certificatePath = file.path;
+            }
+        });
+        console.log(certificatePath)
+        connection.query(query, [companyName, jobProfile, startDate, endDate, stipendStatus, stipend, certificate, certificatePath, int_id], (err, result) => {
+            if (err) {
+                console.error(err)
+            }
+            console.log(result);
+        })
+    }
+}
+
 
 // Function to handle insertion logic
 const insertInternshipRecords = (s_id, internships, resolve, reject, files) => {
     const insertInternshipQuery = `INSERT INTO mentor.students_internships (s_id, company_name, job_profile, start_date, end_date, stipent_status, stipent, internship_cerificate, internship_certificate_path) VALUES `;
-    
+
     const valueSets = [];
     const values = [];
 

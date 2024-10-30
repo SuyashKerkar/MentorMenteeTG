@@ -1,3 +1,4 @@
+const { CgEricsson } = require('react-icons/cg');
 const { connection } = require('../../config/dbconfig');
 const fs = require('fs');
 
@@ -149,12 +150,20 @@ const updateIntenshipRecord = (internship, files) => {
                 certificatePath = file.path;
             }
         });
-        console.log(certificatePath)
+        if(certificatePath){
+            const query = `SELECT internship_certificate_path FROM mentor.students_internships WHERE int_id = ?`
+
+            connection.query(query, [int_id], (err, result) => {
+                if (err) {
+                    console.error(err)
+                }
+                deleteFileIfExists(result[0].internship_certificate_path);
+            })
+        }
         connection.query(query, [companyName, jobProfile, startDate, endDate, stipendStatus, stipend, certificate, certificatePath, int_id], (err, result) => {
             if (err) {
                 console.error(err)
             }
-            console.log(result);
         })
     }
 }

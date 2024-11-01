@@ -224,10 +224,6 @@ const Internships = () => {
     }
 
     // Save the internships with certificate names to localStorage
-    localStorage.setItem(
-      "Internships",
-      JSON.stringify(internshipsWithCertificateNames)
-    );
 
     alert("Internships saved successfully!");
     navigate("/cocurriact");

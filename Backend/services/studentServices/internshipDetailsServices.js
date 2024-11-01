@@ -1,4 +1,3 @@
-const { CgEricsson } = require('react-icons/cg');
 const { connection } = require('../../config/dbconfig');
 const fs = require('fs');
 

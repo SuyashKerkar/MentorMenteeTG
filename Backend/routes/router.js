@@ -41,7 +41,11 @@ router.get('/allStudents',studentController.allStudents);
 router.post('/getStudentpyDetails',upload.none(), prevYearController.getPyDetails);
 router.post('/getStudentcyDetails',upload.none(), currentYearController.getcyDetails);
 router.post('/getInternships',upload.none(), internshipController.getInternships);
+router.post('/getCoActivities',upload.none(), cocurrActController.getActivity);
+
+// Delete data routes
 router.post('/deleteInt',upload.none(), internshipController.delInternship);
+router.post('/deleteCoAct',upload.none(), cocurrActController.delActivity);
 
 // mentor routes
 router.get('/allMentors',mentorController.allMentors);
